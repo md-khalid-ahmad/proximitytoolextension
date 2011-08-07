@@ -146,7 +146,7 @@ public class ProximityService extends Service {
 			if (keyGuardManager.inKeyguardRestrictedInputMode())
 				toggleProximityWakeLock(true);
 			else
-				Log.i(getString(R.string.app_name), "Not activating sensing since phone is still not locked.");
+				Log.i(getString(R.string.app_name), "Not activated sensing since phone is still not locked.");
 		}
 	}
 	
