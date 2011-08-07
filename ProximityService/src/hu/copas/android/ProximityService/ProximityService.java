@@ -124,9 +124,10 @@ public class ProximityService extends Service {
 				}
 				if (proximityWakeLock.isHeld())
 					Log.e(getString(R.string.app_name), "BUG: proximityWakeLock could not be released after " + String.valueOf(i) + " attempts." );
-				Log.i(getString(R.string.app_name), "proximityWakeLock released after " + String.valueOf(i) + " number of attempts." );
-				if (show_icon)
-					showNotification(proximityServiceIcon, getString(R.string.service_started), getString(R.string.service_active), "Proximity sensing deactivated.");
+				else
+					Log.i(getString(R.string.app_name), "proximityWakeLock released after " + String.valueOf(i) + " number of attempts." );
+					if (show_icon)
+						showNotification(proximityServiceIcon, getString(R.string.service_started), getString(R.string.service_active), "Proximity sensing deactivated.");
 			}
 		}
 	}
