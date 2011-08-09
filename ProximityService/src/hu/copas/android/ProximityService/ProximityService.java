@@ -92,6 +92,8 @@ public class ProximityService extends Service {
 				registerReceiver(screenOffReceiver, new IntentFilter(Intent.ACTION_SCREEN_OFF));
 				registerReceiver(userPresentReceiver, new IntentFilter(Intent.ACTION_USER_PRESENT));
 				receivers_registered = true;
+				if (keyGuardManager.inKeyguardRestrictedInputMode())
+					toggleProximityWakeLock(true);
 			}
 		} else {
 			if (receivers_registered) {
