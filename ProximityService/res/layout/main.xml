@@ -5,27 +5,31 @@
     android:layout_height="fill_parent"
     >
     <TableLayout android:layout_width="match_parent" android:id="@+id/tableLayout1" android:layout_height="wrap_content">
-        <TableRow android:layout_height="wrap_content" android:layout_width="wrap_content" android:paddingTop="20px" android:id="@+id/trPadding1"></TableRow>
+        <TableRow android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/trPadding1" android:paddingTop="10px"></TableRow>
         <TableRow android:id="@+id/tableRow1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:padding="10px" android:gravity="center_horizontal">
             <TextView android:id="@+id/textView1" android:layout_height="wrap_content" android:textAppearance="?android:attr/textAppearanceLarge" android:text="@string/app_name" android:layout_width="wrap_content" android:paddingLeft="20px"></TextView>
         </TableRow>
-        <TableRow android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingTop="20px" android:id="@+id/trPadding2"></TableRow>
+        <TableRow android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/trPadding2" android:paddingTop="10px"></TableRow>
         <TableRow android:layout_height="wrap_content" android:layout_width="wrap_content" android:padding="1px" android:background="#555555" android:id="@+id/trLine1"></TableRow>
-        <TableRow android:id="@+id/tableRow3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:padding="10px">
-            <CheckBox android:text="@string/service_running" android:id="@+id/cbServiceRunning" android:layout_marginLeft="20px" android:layout_width="wrap_content" android:layout_height="wrap_content"></CheckBox>
+        <TableRow android:id="@+id/tableRow3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:padding="5px">
+            <CheckBox android:text="@string/service_running" android:id="@+id/cbServiceRunning" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="20px"></CheckBox>
         </TableRow>
         <TableRow android:layout_height="wrap_content" android:layout_width="wrap_content" android:padding="1px" android:background="#555555" android:id="@+id/trLine2"></TableRow>
-        <TableRow android:id="@+id/tableRow4" android:layout_width="wrap_content" android:layout_height="wrap_content" android:padding="10px">
+        <TableRow android:id="@+id/tableRow4" android:layout_width="wrap_content" android:layout_height="wrap_content" android:padding="5px">
             <CheckBox android:text="@string/event_controlled" android:id="@+id/cbEventControlled" android:layout_marginLeft="20px" android:layout_width="wrap_content" android:layout_height="wrap_content"></CheckBox>
         </TableRow>
         <TableRow android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/trline3" android:padding="1px" android:background="#555555"></TableRow>
-        <TableRow android:layout_height="wrap_content" android:layout_width="wrap_content" android:padding="10px" android:id="@+id/tableRow6">
+        <TableRow android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/tableRow6" android:padding="5px">
             <CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="20px" android:id="@+id/cbShowIcon" android:text="@string/show_icon"></CheckBox>
         </TableRow>
         <TableRow android:layout_height="wrap_content" android:layout_width="wrap_content" android:padding="1px" android:background="#555555" android:id="@+id/trLine4"></TableRow>
-        <TableRow android:layout_height="wrap_content" android:layout_width="wrap_content" android:paddingTop="20px" android:id="@+id/trPadding3"></TableRow>
+        <TableRow android:layout_height="wrap_content" android:layout_width="wrap_content" android:padding="5px" android:id="@+id/tableRow7">
+            <CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="20px" android:id="@+id/cbAutoStart" android:text="@string/auto_start"></CheckBox>
+        </TableRow>
+        <TableRow android:layout_height="wrap_content" android:padding="1px" android:layout_width="wrap_content" android:background="#555555" android:id="@+id/trLine5"></TableRow>
+        <TableRow android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/trPadding3" android:paddingTop="10px"></TableRow>
         <TableRow android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/tableRow5">
-            <TextView android:padding="20px" android:id="@+id/textView2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textAppearance="?android:attr/textAppearanceSmall" android:text="@string/config_explanation"></TextView>
+            <TextView android:id="@+id/textView2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textAppearance="?android:attr/textAppearanceSmall" android:text="@string/config_explanation" android:padding="20px"></TextView>
         </TableRow>
     </TableLayout>
 </LinearLayout>
