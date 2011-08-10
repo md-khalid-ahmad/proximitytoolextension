@@ -18,6 +18,10 @@
                 <CheckBox android:text="@string/event_controlled" android:id="@+id/cbEventControlled" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="20px"></CheckBox>
             </TableRow>
             <TableRow android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/trline3" android:padding="1px" android:background="#555555"></TableRow>
+            <TableRow android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/tableRow8" android:padding="5px">
+                <CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="20px" android:id="@+id/cbHeadsetControlled" android:text="@string/headset_controlled"></CheckBox>
+            </TableRow>
+            <TableRow android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/trLine6" android:padding="1px" android:background="#555555"></TableRow>
             <TableRow android:layout_height="wrap_content" android:layout_width="wrap_content" android:id="@+id/tableRow6" android:padding="5px">
                 <CheckBox android:text="@string/show_icon" android:id="@+id/cbShowIcon" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="20px"></CheckBox>
             </TableRow>
