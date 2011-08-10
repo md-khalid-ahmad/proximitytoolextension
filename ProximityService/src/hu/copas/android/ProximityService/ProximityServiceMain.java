@@ -62,6 +62,21 @@ public class ProximityServiceMain extends Activity {
         			}
         		}
         );
+        CheckBox cbHeadsetControlled = (CheckBox)(findViewById(R.id.cbHeadsetControlled));
+        cbHeadsetControlled.setChecked(settingsReader.getBoolean("headset_controlled", true));
+        cbHeadsetControlled.setOnClickListener(
+        		new OnClickListener() {
+        			@Override
+        			public void onClick(View v) {
+        				settingsWriter.putBoolean("headset_controlled", ((CheckBox)v).isChecked());
+        				settingsWriter.commit();
+        				if (ProximityServiceHelper.isServiceRunning(getApplicationContext())) {
+        					ProximityServiceHelper.toggleService(getApplicationContext(), false);
+        					ProximityServiceHelper.toggleService(getApplicationContext(), true);
+        				}
+        			}
+        		}
+        );
         CheckBox cbShowIcon = (CheckBox)(findViewById(R.id.cbShowIcon));
         cbShowIcon.setChecked(settingsReader.getBoolean("show_icon", true));
         cbShowIcon.setOnClickListener(

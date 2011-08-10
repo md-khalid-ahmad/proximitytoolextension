@@ -22,9 +22,14 @@ public class ProximityService extends Service {
 	//BroadcastReceiver phoneStateChangeReceiver = null;
 	private ScreenOffReceiver screenOffReceiver;
 	private UserPresentReceiver userPresentReceiver;
-	private boolean receivers_registered;
+	private HeadSetPlugReceiver headSetPlugReceiver;
+	private boolean receivers_registered = false;
+	private boolean headset_plugged = false;
+	private boolean headset_has_microphone = false;
 	private boolean event_controlled;
 	private boolean show_icon;
+	private boolean headset_receiver_registration = true;
+	private boolean headset_controlled;
 	
     public class LocalBinder extends Binder {
     	ProximityService getService() {
@@ -42,42 +47,54 @@ public class ProximityService extends Service {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		doStartService();
-	}
-
-	@Override
-	public void onDestroy() {
-		doStopService();
-		super.onDestroy();
-	}
-	
-	private void doStartService() {
-		receivers_registered = false;
 		screenOffReceiver = new ScreenOffReceiver();
 		userPresentReceiver = new UserPresentReceiver();
+		headSetPlugReceiver = new HeadSetPlugReceiver();
 		keyGuardManager = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
 		PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
 		proximityWakeLock = pm.newWakeLock(PROXIMITY_SCREEN_OFF_WAKE_LOCK, "PTWLTAG");
 		proximityWakeLock.setReferenceCounted(false);
-		event_controlled = ProximityServiceHelper.settingsReader(this).getBoolean("event_controlled", true);
+		doStartService(false);
+	}
+
+	@Override
+	public void onDestroy() {
+		doStopService(false);
+		super.onDestroy();
+	}
+	
+	private void doStartService(boolean silent) {
 		show_icon = ProximityServiceHelper.settingsReader(this).getBoolean("show_icon", true);
+		headset_controlled = ProximityServiceHelper.settingsReader(this).getBoolean("headset_controlled", true);
+		event_controlled = ProximityServiceHelper.settingsReader(this).getBoolean("event_controlled", true)
+			&& !(headset_controlled && headset_plugged && headset_has_microphone);
+		if (headset_controlled && headset_receiver_registration) {
+			registerReceiver(headSetPlugReceiver, new IntentFilter(Intent.ACTION_HEADSET_PLUG));
+		}
 		String ec = "general.";
 		if (event_controlled)
 			ec = "event controlled.";
-		ProximityServiceHelper.showNotification(this, ProximityServiceHelper.proximityServiceIcon, getString(R.string.service_started), getString(R.string.service_running), "Proximity sensing: " + ec);
-		if (!show_icon)
-			ProximityServiceHelper.cancelNotification(this);
+		if (!silent) {
+			ProximityServiceHelper.showNotification(this, ProximityServiceHelper.proximityServiceIcon, getString(R.string.service_started), getString(R.string.service_running), "Proximity sensing: " + ec);
+			if (!show_icon)
+				ProximityServiceHelper.cancelNotification(this);
+		}
 		if (!event_controlled)
 			toggleProximityWakeLock(true);
 		else
 			toggleReceivers(true);
 	}
 	
-	private void doStopService() {
+	private void doStopService(boolean silent) {
 		toggleReceivers(false);
+		if (headset_controlled && headset_receiver_registration) {
+			unregisterReceiver(headSetPlugReceiver);
+		}
 		toggleProximityWakeLock(false);
-		ProximityServiceHelper.showNotification(this, ProximityServiceHelper.proximityServiceIcon, getString(R.string.service_stopped), "", "");
-		ProximityServiceHelper.cancelNotification(this);
+		if (!silent) {
+			ProximityServiceHelper.showNotification(this, ProximityServiceHelper.proximityServiceIcon, getString(R.string.service_stopped), "", "");
+			ProximityServiceHelper.cancelNotification(this);
+		}
 	}
 	
 	@Override
@@ -163,4 +180,36 @@ public class ProximityService extends Service {
 
 	}
 
+	public class HeadSetPlugReceiver extends BroadcastReceiver {
+
+		@Override
+		public void onReceive(Context arg0, Intent arg1) {
+			Intent intent = arg1;
+			/*
+			Log.i(getString(R.string.app_name), "Received event: ACTION_HEADSET_PLUG."
+					+ " state:" + String.valueOf(intent.getIntExtra("state", 0))
+					+ " microphone:" + String.valueOf(intent.getIntExtra("microphone", 0))
+					+ " name:" + intent.getStringExtra("name")
+					);
+			*/
+			if (intent != null) {
+				headset_plugged = intent.getIntExtra("state", 0) != 0;
+				headset_has_microphone = intent.getIntExtra("microphone", 0) != 0;
+				String s = "";
+				if (headset_plugged) {
+					s += " Headset";
+					if (headset_has_microphone)
+						s += " with microphone";
+					s += " plugged in.";
+				} else
+					s += " No headset plugged in.";
+				Log.i(getString(R.string.app_name), "Received event: ACTION_HEADSET_PLUG." + s);
+				headset_receiver_registration = false;
+				doStopService(true);
+				doStartService(true);
+				headset_receiver_registration = true;
+			}
+		}
+	}
+	
 }
