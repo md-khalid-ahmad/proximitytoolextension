@@ -2,6 +2,8 @@ package hu.copas.android.ProximityService;
 
 import android.app.KeyguardManager;
 import android.app.Service;
+import android.bluetooth.BluetoothClass;
+import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -14,6 +16,7 @@ import android.util.Log;
 public class ProximityService extends Service {
 
 	final private static int PROXIMITY_SCREEN_OFF_WAKE_LOCK = 32;
+	final private static int remoteAudioClass = BluetoothClass.Device.AUDIO_VIDEO_HANDSFREE | BluetoothClass.Device.AUDIO_VIDEO_HEADPHONES | BluetoothClass.Device.AUDIO_VIDEO_PORTABLE_AUDIO;
 
 	private PowerManager.WakeLock proximityWakeLock;
 	private KeyguardManager keyGuardManager;
@@ -23,12 +26,13 @@ public class ProximityService extends Service {
 	private ScreenOffReceiver screenOffReceiver;
 	private UserPresentReceiver userPresentReceiver;
 	private HeadSetPlugReceiver headSetPlugReceiver;
-	private boolean receivers_registered = false;
-	private boolean headset_plugged = false;
-	private boolean headset_has_microphone = false;
+	private BluetoothConnectReceiver bluetoothConnectReceiver;
+	private BluetoothDisconnectReceiver bluetoothDisconnectReceiver;
+	private boolean receiversRegistered = false;
+	private boolean headsetConnected = false;
+	private boolean bluetoothConnected = false;
 	private boolean event_controlled;
 	private boolean show_icon;
-	private boolean headset_receiver_registration = true;
 	private boolean headset_controlled;
 	
     public class LocalBinder extends Binder {
@@ -50,16 +54,24 @@ public class ProximityService extends Service {
 		screenOffReceiver = new ScreenOffReceiver();
 		userPresentReceiver = new UserPresentReceiver();
 		headSetPlugReceiver = new HeadSetPlugReceiver();
+		bluetoothConnectReceiver = new BluetoothConnectReceiver();
+		bluetoothDisconnectReceiver = new BluetoothDisconnectReceiver();
 		keyGuardManager = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
 		PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
 		proximityWakeLock = pm.newWakeLock(PROXIMITY_SCREEN_OFF_WAKE_LOCK, "PTWLTAG");
 		proximityWakeLock.setReferenceCounted(false);
+		registerReceiver(headSetPlugReceiver, new IntentFilter(Intent.ACTION_HEADSET_PLUG));
+		registerReceiver(bluetoothConnectReceiver, new IntentFilter(android.bluetooth.BluetoothDevice.ACTION_ACL_CONNECTED));
+		registerReceiver(bluetoothDisconnectReceiver, new IntentFilter(android.bluetooth.BluetoothDevice.ACTION_ACL_DISCONNECTED));
 		doStartService(false);
 	}
 
 	@Override
 	public void onDestroy() {
 		doStopService(false);
+		unregisterReceiver(headSetPlugReceiver);
+		unregisterReceiver(bluetoothConnectReceiver);
+		unregisterReceiver(bluetoothDisconnectReceiver);
 		super.onDestroy();
 	}
 	
@@ -67,10 +79,7 @@ public class ProximityService extends Service {
 		show_icon = ProximityServiceHelper.settingsReader(this).getBoolean("show_icon", true);
 		headset_controlled = ProximityServiceHelper.settingsReader(this).getBoolean("headset_controlled", true);
 		event_controlled = ProximityServiceHelper.settingsReader(this).getBoolean("event_controlled", true)
-			&& !(headset_controlled && headset_plugged && headset_has_microphone);
-		if (headset_controlled && headset_receiver_registration) {
-			registerReceiver(headSetPlugReceiver, new IntentFilter(Intent.ACTION_HEADSET_PLUG));
-		}
+			&& !(headset_controlled && (headsetConnected || bluetoothConnected));
 		String ec = "general.";
 		if (event_controlled)
 			ec = "event controlled.";
@@ -87,9 +96,6 @@ public class ProximityService extends Service {
 	
 	private void doStopService(boolean silent) {
 		toggleReceivers(false);
-		if (headset_controlled && headset_receiver_registration) {
-			unregisterReceiver(headSetPlugReceiver);
-		}
 		toggleProximityWakeLock(false);
 		if (!silent) {
 			ProximityServiceHelper.showNotification(this, ProximityServiceHelper.proximityServiceIcon, getString(R.string.service_stopped), "", "");
@@ -104,19 +110,19 @@ public class ProximityService extends Service {
 	
 	public void toggleReceivers(boolean start) {
 		if (start) {
-			if (!receivers_registered) {
+			if (!receiversRegistered) {
 				//registerReceiver(phoneStateChangeReceiver, new IntentFilter(android.telephony.TelephonyManager.ACTION_PHONE_STATE_CHANGED));
 				registerReceiver(screenOffReceiver, new IntentFilter(Intent.ACTION_SCREEN_OFF));
 				registerReceiver(userPresentReceiver, new IntentFilter(Intent.ACTION_USER_PRESENT));
-				receivers_registered = true;
+				receiversRegistered = true;
 				if (keyGuardManager.inKeyguardRestrictedInputMode())
 					toggleProximityWakeLock(true);
 			}
 		} else {
-			if (receivers_registered) {
+			if (receiversRegistered) {
 				unregisterReceiver(screenOffReceiver);
 				unregisterReceiver(userPresentReceiver);
-				receivers_registered = false;
+				receiversRegistered = false;
 			}
 		}
 	}
@@ -192,24 +198,63 @@ public class ProximityService extends Service {
 					+ " name:" + intent.getStringExtra("name")
 					);
 			*/
-			if (intent != null) {
-				headset_plugged = intent.getIntExtra("state", 0) != 0;
-				headset_has_microphone = intent.getIntExtra("microphone", 0) != 0;
+			if (headset_controlled && intent != null) {
+				headsetConnected = intent.getIntExtra("state", 0) != 0;
+				if (headsetConnected)
+					headsetConnected = intent.getIntExtra("microphone", 0) != 0;
 				String s = "";
-				if (headset_plugged) {
-					s += " Headset";
-					if (headset_has_microphone)
-						s += " with microphone";
-					s += " plugged in.";
+				if (headsetConnected) {
+					s += " Wired headset with microphone connected.";
 				} else
-					s += " No headset plugged in.";
+					s += " No wired headset connected.";
 				Log.i(getString(R.string.app_name), "Received event: ACTION_HEADSET_PLUG." + s);
-				headset_receiver_registration = false;
 				doStopService(true);
 				doStartService(true);
-				headset_receiver_registration = true;
 			}
 		}
+	}
+
+	public class BluetoothConnectReceiver extends BroadcastReceiver {
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			if (headset_controlled && intent != null) {
+				BluetoothDevice btDevice = intent.getExtras().getParcelable(BluetoothDevice.EXTRA_DEVICE);
+				int btDevClass = btDevice.getBluetoothClass().getDeviceClass();
+				String s = "";
+				if ((btDevClass & remoteAudioClass) != 0) {
+					s += " Bluetooth audio headset connected.";
+					bluetoothConnected = true;
+				} else {
+					s += " Bluetooth device without audio connected.";
+				}
+				Log.i(getString(R.string.app_name), "Received event: ACTION_ACL_CONNECTED." + s);
+				doStopService(true);
+				doStartService(true);
+			}
+		}
+		
+	}
+	
+	public class BluetoothDisconnectReceiver extends BroadcastReceiver {
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			if (headset_controlled && intent != null) {
+				BluetoothDevice btDevice = intent.getExtras().getParcelable(BluetoothDevice.EXTRA_DEVICE);
+				int btDevClass = btDevice.getBluetoothClass().getDeviceClass();
+				String s = "";
+				if ((btDevClass & remoteAudioClass) != 0) {
+					s += " Bluetooth audio headset disconnected.";
+					bluetoothConnected = false;
+				} else
+					s += " Bluetooth device without audio disconnected.";
+				Log.i(getString(R.string.app_name), "Received event: ACTION_ACL_DISCONNECTED." + s);
+				doStopService(true);
+				doStartService(true);
+			}
+		}
+		
 	}
 	
 }
