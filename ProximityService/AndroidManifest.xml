@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-      package="hu.copas.android.ProximityService" android:versionName="1.4">
+      package="hu.copas.android.ProximityService" android:versionName="2.0" android:versionCode="20">
     <!--uses-permission android:name="android.permission.READ_PHONE_STATE"></uses-permission-->
 	<uses-sdk android:targetSdkVersion="10" android:minSdkVersion="5"></uses-sdk>
 	<uses-permission android:name="android.permission.WAKE_LOCK"></uses-permission>
 	<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"></uses-permission>
 	<uses-permission android:name="android.permission.BLUETOOTH"></uses-permission>
+	<uses-permission android:name="android.permission.DEVICE_POWER"/>
     <application android:label="@string/app_name" android:icon="@drawable/proximity72">
         <activity android:label="@string/app_name" android:name="ProximityServiceMain">
             <intent-filter>

@@ -2,12 +2,17 @@
 <resources>
     <string name="app_name">Proximity Service</string>
     <string name="event_controlled">Event controlled</string>
-    <string name="service_running">Service running</string>
-    <string name="config_explanation">&quot;'Event controlled' means that proximity sensing is only enabled when phone is idle. Idle state starts when device gets locked (screen goes off) and ends by unlocking it.&quot;</string>
+    <string name="service_running">Proximity Service running</string>
+    <string name="config_explanation">&quot;'Event controlled' means that proximity sensing is only enabled when phone is idle. Idle state starts when device gets locked (screen goes off) and ends when the user unlocks it.&quot;</string>
     <string name="service_started">Proximity Service started</string>
     <string name="service_active">Proximity Service active</string>
     <string name="service_stopped">Proximity Service stopped</string>
-    <string name="show_icon">Show icon in notification</string>
+    <string name="show_icon">Ongoing notification</string>
     <string name="auto_start">Auto start service at boot</string>
     <string name="headset_controlled">Headset controlled</string>
+    <string-array name="controls">
+        <item >Event controlled</item>
+        <item >Headset controlled</item>
+        <item >No control</item>
+    </string-array>
 </resources>
