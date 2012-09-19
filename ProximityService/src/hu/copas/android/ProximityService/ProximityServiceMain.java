@@ -8,7 +8,11 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.CheckBox;
+import android.widget.Spinner;
+import android.widget.Toast;
 
 public class ProximityServiceMain extends Activity {
 
@@ -35,7 +39,7 @@ public class ProximityServiceMain extends Activity {
 		settingsReader = ProximityServiceHelper.settingsReader(this);
 		settingsWriter = settingsReader.edit();
         setContentView(R.layout.main);
-        CheckBox cbServiceRunning = (CheckBox)(findViewById(R.id.cbServiceRunning));
+        final CheckBox cbServiceRunning = (CheckBox)(findViewById(R.id.cbServiceRunning));
         cbServiceRunning.setChecked(ProximityServiceHelper.isServiceRunning(this));
         cbServiceRunning.setOnClickListener(
         		new OnClickListener() {
@@ -47,35 +51,20 @@ public class ProximityServiceMain extends Activity {
         			}
         		}
         );
-        CheckBox cbEventControlled = (CheckBox)(findViewById(R.id.cbEventControlled));
-        cbEventControlled.setChecked(settingsReader.getBoolean("event_controlled", true));
-        cbEventControlled.setOnClickListener(
-        		new OnClickListener() {
-        			@Override
-        			public void onClick(View v) {
-        				settingsWriter.putBoolean("event_controlled", ((CheckBox)v).isChecked());
-        				settingsWriter.commit();
-        				if (ProximityServiceHelper.isServiceRunning(getApplicationContext())) {
-        					ProximityServiceHelper.toggleService(getApplicationContext(), false);
-        					ProximityServiceHelper.toggleService(getApplicationContext(), true);
-        				}
-        			}
-        		}
-        );
-        CheckBox cbHeadsetControlled = (CheckBox)(findViewById(R.id.cbHeadsetControlled));
-        cbHeadsetControlled.setChecked(settingsReader.getBoolean("headset_controlled", true));
-        cbHeadsetControlled.setOnClickListener(
-        		new OnClickListener() {
-        			@Override
-        			public void onClick(View v) {
-        				settingsWriter.putBoolean("headset_controlled", ((CheckBox)v).isChecked());
-        				settingsWriter.commit();
-        				if (ProximityServiceHelper.isServiceRunning(getApplicationContext())) {
-        					ProximityServiceHelper.toggleService(getApplicationContext(), false);
-        					ProximityServiceHelper.toggleService(getApplicationContext(), true);
-        				}
-        			}
-        		}
+        Spinner spinner_control = (Spinner)(findViewById(R.id.spinner_control));
+        spinner_control.setSelection(settingsReader.getInt("control", 0));
+        spinner_control.setOnItemSelectedListener( new OnItemSelectedListener() {
+			@Override
+			public void onItemSelected(AdapterView<?> arg0, View arg1,
+					int arg2, long arg3) {
+				settingsWriter.putInt("control", arg2);
+				settingsWriter.commit();
+				ProximityServiceHelper.toggleService(getApplicationContext(), cbServiceRunning.isChecked());
+			}
+			@Override
+			public void onNothingSelected(AdapterView<?> arg0) {
+			}
+		}
         );
         CheckBox cbShowIcon = (CheckBox)(findViewById(R.id.cbShowIcon));
         cbShowIcon.setChecked(settingsReader.getBoolean("show_icon", true));
@@ -86,8 +75,7 @@ public class ProximityServiceMain extends Activity {
         				settingsWriter.putBoolean("show_icon", ((CheckBox)v).isChecked());
         				settingsWriter.commit();
         				if (ProximityServiceHelper.isServiceRunning(getApplicationContext())) {
-        					ProximityServiceHelper.toggleService(getApplicationContext(), false);
-        					ProximityServiceHelper.toggleService(getApplicationContext(), true);
+        					ProximityServiceHelper.toggleService(getApplicationContext(), cbServiceRunning.isChecked());
         				}
         			}
         		}

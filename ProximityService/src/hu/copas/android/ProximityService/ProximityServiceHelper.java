@@ -8,6 +8,7 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.ActivityManager.RunningServiceInfo;
+import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -18,17 +19,17 @@ public class ProximityServiceHelper extends Activity {
 	final public static int proximityServiceIcon = R.drawable.proximity;
 	final public static int proximityServiceIconOn = R.drawable.proximityon;
 	
-	public static void showNotification(Context context, int icon, String tickerText, String contentTitle, String contentText) {
+	public static void showNotification(Context context, int icon, String tickerText, String contentTitle, String contentText, boolean ongoing) {
 		final NotificationManager notificationManager = (NotificationManager)(context.getSystemService(NOTIFICATION_SERVICE));
 		Notification n;
 		PendingIntent pi;
 		pi = PendingIntent.getActivity(context, 0, new Intent(context, ProximityServiceMain.class), 0);
 		n = new Notification(icon, tickerText, System.currentTimeMillis());
 		n.flags = Notification.FLAG_ONGOING_EVENT | Notification.FLAG_NO_CLEAR;
-		//if (!"".equals(contentTitle + contentText))
-			// n.flags |= Notification.FLAG_FOREGROUND_SERVICE;
 		n.setLatestEventInfo(context, contentTitle, contentText, pi);
 		notificationManager.notify(proximityServiceNotificationId, n);
+		if (!ongoing)
+			cancelNotification(context);
 	}
 	
 	public static void cancelNotification(Context context) {
@@ -36,6 +37,19 @@ public class ProximityServiceHelper extends Activity {
 		notificationManager.cancel(proximityServiceNotificationId);
 	}
 
+	public static void startForeground(Service service, int icon, String tickerText, String contentTitle, String contentText) {
+		PendingIntent pi = PendingIntent.getActivity(service, 0, new Intent(service, ProximityServiceMain.class), 0);
+		Notification n;
+		n = new Notification(icon, tickerText, System.currentTimeMillis());
+		n.flags = Notification.FLAG_ONGOING_EVENT;
+		n.setLatestEventInfo(service, contentTitle, contentText, pi);
+		service.startForeground(proximityServiceNotificationId, n);
+	}
+	
+	public static void stopForeground(Service service) {
+		service.stopForeground(true);
+	}
+	
 	public static SharedPreferences settingsReader(Context context) {
 		return context.getSharedPreferences("preferences", 0);
 	}
@@ -54,27 +68,14 @@ public class ProximityServiceHelper extends Activity {
 			}
 		}
         return result;
-	}
-
+    }
+    
     public static void toggleService(Context context, boolean start) {
     	Intent intentService = new Intent(context, ProximityService.class);
-        // ServiceConn serviceConn = new ServiceConn();
-        if (start) {
-	        if (!isServiceRunning(context)) {
-	        	// bindService(intentService, serviceConn, Context.BIND_AUTO_CREATE);
-	        	context.startService(intentService);
-        		// unbindService(serviceConn);
-        	}
-        } else {
-        	if (isServiceRunning(context)) {
-	        	context.stopService(intentService);
-	        	/*
-	        	if (boundService != null) {
-	        		unbindService(serviceConn);
-	        	}
-	        	*/
-        	}
-        }
+    	if (isServiceRunning(context))
+    		context.stopService(intentService);
+    	if (start)
+    		context.startService(intentService);
     }
-        
+
 }
