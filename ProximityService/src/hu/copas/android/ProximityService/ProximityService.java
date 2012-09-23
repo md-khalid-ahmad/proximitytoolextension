@@ -1,5 +1,6 @@
 package hu.copas.android.ProximityService;
 
+import android.app.Activity;
 import android.app.KeyguardManager;
 import android.app.Service;
 import android.bluetooth.BluetoothClass;
@@ -11,7 +12,11 @@ import android.content.IntentFilter;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.os.SystemClock;
 import android.util.Log;
+import android.view.Window;
+import android.view.WindowManager;
+import android.view.WindowManager.LayoutParams;
 import android.widget.SlidingDrawer;
 
 public class ProximityService extends Service {
@@ -25,7 +30,7 @@ public class ProximityService extends Service {
 	// public Intent serviceIntent;
 
 	//BroadcastReceiver phoneStateChangeReceiver = null;
-	private ScreenOnReceiver screenOnReceiver;
+	//private ScreenOnReceiver screenOnReceiver;
 	private ScreenOffReceiver screenOffReceiver;
 	private UserPresentReceiver userPresentReceiver;
 	private HeadSetPlugReceiver headSetPlugReceiver;
@@ -39,6 +44,7 @@ public class ProximityService extends Service {
 	private boolean headset_controlled;
 	private boolean no_control;
 	private String ec;
+	private boolean sendingToSleep;
 	
     public class LocalBinder extends Binder {
     	ProximityService getService() {
@@ -56,12 +62,17 @@ public class ProximityService extends Service {
 	@Override
 	public void onCreate() {
 		super.onCreate();
+		powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+		proximityWakeLock = powerManager.newWakeLock(PROXIMITY_SCREEN_OFF_WAKE_LOCK, "PTWLTAG");
+		proximityWakeLock.setReferenceCounted(false);
+		//screenOnReceiver = new ScreenOnReceiver();
 		screenOffReceiver = new ScreenOffReceiver();
 		userPresentReceiver = new UserPresentReceiver();
 		keyGuardManager = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
 		headSetPlugReceiver = new HeadSetPlugReceiver();
 		bluetoothConnectReceiver = new BluetoothConnectReceiver();
 		bluetoothDisconnectReceiver = new BluetoothDisconnectReceiver();
+		sendingToSleep = false;
 	}
 
 	@Override
@@ -93,9 +104,6 @@ public class ProximityService extends Service {
 			registerReceiver(bluetoothConnectReceiver, new IntentFilter(android.bluetooth.BluetoothDevice.ACTION_ACL_CONNECTED));
 			registerReceiver(bluetoothDisconnectReceiver, new IntentFilter(android.bluetooth.BluetoothDevice.ACTION_ACL_DISCONNECTED));
 		}
-		powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
-		proximityWakeLock = powerManager.newWakeLock(PROXIMITY_SCREEN_OFF_WAKE_LOCK, "PTWLTAG");
-		proximityWakeLock.setReferenceCounted(false);
 		if (ongoing)
 			ProximityServiceHelper.startForeground(this, ProximityServiceHelper.proximityServiceIcon, getString(R.string.service_started), getString(R.string.service_running), "Proximity sensing: " + ec);
 		else
@@ -113,7 +121,7 @@ public class ProximityService extends Service {
 			if (start) {
 				if (!receiversRegistered) {
 					//registerReceiver(phoneStateChangeReceiver, new IntentFilter(android.telephony.TelephonyManager.ACTION_PHONE_STATE_CHANGED));
-					// registerReceiver(screenOnReceiver, new IntentFilter(Intent.ACTION_SCREEN_ON));
+					//registerReceiver(screenOnReceiver, new IntentFilter(Intent.ACTION_SCREEN_ON));
 					registerReceiver(screenOffReceiver, new IntentFilter(Intent.ACTION_SCREEN_OFF));
 					registerReceiver(userPresentReceiver, new IntentFilter(Intent.ACTION_USER_PRESENT));
 					receiversRegistered = true;
@@ -122,6 +130,7 @@ public class ProximityService extends Service {
 				}
 			} else {
 				if (receiversRegistered) {
+					//unregisterReceiver(screenOnReceiver);
 					unregisterReceiver(screenOffReceiver);
 					unregisterReceiver(userPresentReceiver);
 					receiversRegistered = false;
@@ -130,39 +139,60 @@ public class ProximityService extends Service {
 	}
 	
 	public void toggleProximityWakeLock(boolean on) {
-		if (on) {
-			if (!proximityWakeLock.isHeld()) {
-				Log.i(getString(R.string.app_name), "trying to aquire proximityWakeLock.");
-				try {
-					proximityWakeLock.acquire();
-					Log.i(getString(R.string.app_name), "proximityWakeLock aquired.");
-					ProximityServiceHelper.showNotification(this, ProximityServiceHelper.proximityServiceIconOn, getString(R.string.service_started), getString(R.string.service_active), "Proximity sensing activated.", false);
-				} catch (Exception e) {
-				}
-			}
-		} else {
-			if (proximityWakeLock.isHeld()) {
-				int i = 0;
-				while (proximityWakeLock.isHeld() && i < 30) {
+		if (proximityWakeLock != null)
+			if (on) {
+				if (!proximityWakeLock.isHeld()) {
+					Log.i(getString(R.string.app_name), "trying to aquire proximityWakeLock.");
 					try {
-						proximityWakeLock.release();
-						i++;
-						Thread.sleep(100);
+						proximityWakeLock.acquire();
+						Log.i(getString(R.string.app_name), "proximityWakeLock aquired.");
+						ProximityServiceHelper.showNotification(this, ProximityServiceHelper.proximityServiceIconOn, getString(R.string.service_started), getString(R.string.service_active), "Proximity sensing activated.", false);
+					} catch (Exception e) {
+					}
+				}
+				/*
+				else { 
+					try {
+						sendingToSleep = true;
+						try {
+							proximityWakeLock.release();
+							powerManager.goToSleep(SystemClock.uptimeMillis() + 1000);
+							Log.i(getString(R.string.app_name), "Sent to sleep.");
+							Thread.sleep(1000);
+							proximityWakeLock.acquire();
+						} finally {
+							sendingToSleep = false;
+						}
+						if (proximityWakeLock.isHeld())
+							Log.i(getString(R.string.app_name), "wakelock re-aquired.");
+						else
+							Log.i(getString(R.string.app_name), "failed to re-aquire wakelock.");
+					} catch (Exception e) {}
+				}
+				*/
+			} else {
+				if (proximityWakeLock.isHeld()) {
+					int i = 0;
+					while (proximityWakeLock.isHeld() && i < 30) {
+						try {
+							proximityWakeLock.release();
+							i++;
+							Thread.sleep(100);
+						} catch (Exception e) {
+							Log.e(getString(R.string.app_name), e.getMessage(), e);
+						}
+					}
+					try {
+						if (proximityWakeLock.isHeld())
+							Log.e(getString(R.string.app_name), "BUG: proximityWakeLock could not be released after " + String.valueOf(i) + " attempts." );
+						else
+							Log.i(getString(R.string.app_name), "proximityWakeLock released after " + String.valueOf(i) + " number of attempts." );
+						ProximityServiceHelper.showNotification(this, ProximityServiceHelper.proximityServiceIcon, getString(R.string.service_started), getString(R.string.service_active), "Proximity sensing: " + ec, false);
 					} catch (Exception e) {
 						Log.e(getString(R.string.app_name), e.getMessage(), e);
 					}
 				}
-				try {
-					if (proximityWakeLock.isHeld())
-						Log.e(getString(R.string.app_name), "BUG: proximityWakeLock could not be released after " + String.valueOf(i) + " attempts." );
-					else
-						Log.i(getString(R.string.app_name), "proximityWakeLock released after " + String.valueOf(i) + " number of attempts." );
-					ProximityServiceHelper.showNotification(this, ProximityServiceHelper.proximityServiceIcon, getString(R.string.service_started), getString(R.string.service_active), "Proximity sensing: " + ec, false);
-				} catch (Exception e) {
-					Log.e(getString(R.string.app_name), e.getMessage(), e);
-				}
 			}
-		}
 	}
 
 	public class ScreenOnReceiver extends BroadcastReceiver {
@@ -170,15 +200,6 @@ public class ProximityService extends Service {
 		public void onReceive(Context arg0, Intent arg1) {
 			if (event_controlled) {
 				Log.i(getString(R.string.app_name), "Received event: ACTION_SCREEN_ON");
-				/*
-				try {
-					if (keyGuardManager.inKeyguardRestrictedInputMode()) {
-						toggleProximityWakeLock(false);
-					}
-				} catch (Exception e) {
-					Log.e(getString(R.string.app_name), e.getMessage(), e);
-				}
-				*/
 			}
 		}
 
@@ -187,13 +208,15 @@ public class ProximityService extends Service {
 	public class ScreenOffReceiver extends BroadcastReceiver {
 		@Override
 		public void onReceive(Context arg0, Intent arg1) {
-			if (event_controlled) {
+			if (!sendingToSleep && event_controlled) {
 				Log.i(getString(R.string.app_name), "Received event: ACTION_SCREEN_OFF");
 				int i = 30;
 				try {
-					while (i > 0 && !keyGuardManager.inKeyguardRestrictedInputMode())
+					while (i > 0 && !keyGuardManager.inKeyguardRestrictedInputMode()) {
 						i--;
 						Thread.sleep(1000);
+					}
+					Thread.sleep(1000);
 					if (keyGuardManager.inKeyguardRestrictedInputMode()) {
 						toggleProximityWakeLock(true);
 						//powerManager.goToSleep(0);
