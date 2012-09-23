@@ -13,14 +13,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 
-public class ProximityServiceHelper extends Activity {
+public class ProximityServiceHelper {
 
 	final private static int proximityServiceNotificationId = 1;
 	final public static int proximityServiceIcon = R.drawable.proximity;
 	final public static int proximityServiceIconOn = R.drawable.proximityon;
 	
 	public static void showNotification(Context context, int icon, String tickerText, String contentTitle, String contentText, boolean ongoing) {
-		final NotificationManager notificationManager = (NotificationManager)(context.getSystemService(NOTIFICATION_SERVICE));
+		final NotificationManager notificationManager = (NotificationManager)(context.getSystemService(Activity.NOTIFICATION_SERVICE));
 		Notification n;
 		PendingIntent pi;
 		pi = PendingIntent.getActivity(context, 0, new Intent(context, ProximityServiceMain.class), 0);
@@ -33,7 +33,7 @@ public class ProximityServiceHelper extends Activity {
 	}
 	
 	public static void cancelNotification(Context context) {
-		final NotificationManager notificationManager = (NotificationManager)(context.getSystemService(NOTIFICATION_SERVICE));
+		final NotificationManager notificationManager = (NotificationManager)(context.getSystemService(Activity.NOTIFICATION_SERVICE));
 		notificationManager.cancel(proximityServiceNotificationId);
 	}
 
@@ -60,7 +60,7 @@ public class ProximityServiceHelper extends Activity {
 		
     public static boolean isServiceRunning(Context context) {
 		boolean result = false;
-        ActivityManager am = (ActivityManager) context.getSystemService(ACTIVITY_SERVICE);
+        ActivityManager am = (ActivityManager) context.getSystemService(Activity.ACTIVITY_SERVICE);
         List<RunningServiceInfo> rsi = am.getRunningServices(Integer.MAX_VALUE);
         for (RunningServiceInfo runningServiceInfo : rsi) {
 			if (runningServiceInfo.service.getClassName().equals(ProximityService.class.getName())) {
